@@ -1,7 +1,7 @@
 export interface CreatePostRequest {
 	title: string;
 	content: string;
-	author: string;
+	authorId: number;
 	categoryId: number;
 }
 
