@@ -1,8 +1,9 @@
 import type { RequestHandler } from 'express';
 import type { PostService } from '../../services/post.types.js';
-import type { CreatePostRequest, GetPostsQuery, PostParams } from '../dto/post/requests.js';
+import { ApiError } from '../../shared/errors.js';
 import type { ErrorResponse } from '../dto/post/errors.js';
-import type { Post, PostListResponse } from '../dto/post/responces.js';
+import type { CreatePostRequest, GetPostsQuery, PostParams } from '../dto/post/requests.js';
+import type { Post, PostListResponse } from '../dto/post/responses.js';
 
 export interface PostHandlers {
   getPosts: RequestHandler<Record<string, never>, PostListResponse | ErrorResponse, never, GetPostsQuery>;
@@ -12,70 +13,77 @@ export interface PostHandlers {
 
 export function createPostHandlers(postService: PostService): PostHandlers {
   return {
-    getPosts(req, res) {
-      const take = parseTake(req.query.take);
-      if (take === null) return res.status(400).json({ error: 'take must be a positive integer' });
+    async getPosts(req, res) {
+      const take = parsePositiveInteger(req.query.take);
+      if (take === null) throw new ApiError(400, 'take must be a positive integer');
 
-      if (req.query.category !== undefined && !req.query.category.trim()) return res.status(400).json({ error: 'category must not be empty' });
+      if (req.query.category !== undefined && (typeof req.query.category !== 'string' || !req.query.category.trim())) {
+        throw new ApiError(400, 'category must not be empty');
+      }
 
-      return res.json(postService.getPosts(req.query.category, take));
+      const categoryId = parsePositiveInteger(req.query.categoryId);
+      if (categoryId === null) throw new ApiError(400, 'categoryId must be a positive integer');
+
+      const posts = await postService.getPosts({
+        ...(req.query.category === undefined ? {} : { category: req.query.category.trim() }),
+        ...(categoryId === undefined ? {} : { categoryId }),
+        ...(take === undefined ? {} : { take }),
+      });
+
+      return res.json(posts);
     },
 
-    getPostById(req, res) {
-      const id = parseId(req.params.id);
-      if (id === null) return res.status(400).json({ error: 'id must be a positive integer' });
+    async getPostById(req, res) {
+      const id = parsePositiveInteger(req.params.id);
+      if (id === null || id === undefined) throw new ApiError(400, 'id must be a positive integer');
 
-      const post = postService.getPostById(id);
-      if (!post) return res.status(404).json({ error: 'Post not found' });
+      const post = await postService.getPostById(id);
+      if (!post) throw new ApiError(404, 'Post not found');
 
       return res.json(post);
     },
 
     async createPost(req, res) {
-      const parsedPost = parseCreatePost(req.body);
-      if ('error' in parsedPost) return res.status(422).json({ error: parsedPost.error });
-
-      const post = await postService.createPost(parsedPost.data);
+      const input = parseCreatePost(req.body);
+      const post = await postService.createPost(input);
       return res.status(201).json(post);
     },
   };
 }
-  
-function parseTake(value?: string): number | null | undefined {
+
+function parsePositiveInteger(value: unknown): number | null | undefined {
   if (value === undefined) return undefined;
-  if (!Number.isInteger(Number(value)) || Number(value) < 1) return null;
+  if (typeof value !== 'string' && typeof value !== 'number') return null;
 
-  return Number(value);
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
-function parseId(value: string): number | null {
-  if (!Number.isInteger(Number(value)) || Number(value) < 1) return null;
-
-  return Number(value);
-}
-
-function parseCreatePost(body: unknown): { data: CreatePostRequest } | { error: string } {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) return { error: 'Request body must be an object' };
+function parseCreatePost(body: unknown): CreatePostRequest {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw new ApiError(422, 'Request body must be an object');
+  }
 
   const post = body as Record<string, unknown>;
-  const title = post.title;
-  if (typeof title !== 'string' || !title.trim()) return { error: 'title must be a non-empty string' };
+  const allowedFields = ['title', 'content', 'author', 'categoryId'];
+  if (Object.keys(post).some((field) => !allowedFields.includes(field))) {
+    throw new ApiError(422, 'Request contains invalid fields');
+  }
 
-  const content = post.content;
-  if (typeof content !== 'string' || !content.trim()) return { error: 'content must be a non-empty string' };
+  const { title, content, author, categoryId } = post;
+  if (typeof title !== 'string' || !title.trim()) throw new ApiError(422, 'title must be a non-empty string');
+  if (typeof content !== 'string' || !content.trim()) throw new ApiError(422, 'content must be a non-empty string');
+  if (typeof author !== 'string' || !author.trim()) throw new ApiError(422, 'author must be a non-empty string');
 
-  const author = post.author;
-  if (typeof author !== 'string' || !author.trim()) return { error: 'author must be a non-empty string' };
-
-  const category = post.category;
-  if (typeof category !== 'string' || !category.trim()) return { error: 'category must be a non-empty string' };
+  if (categoryId === undefined) throw new ApiError(422, 'categoryId is required');
+  if (typeof categoryId !== 'number' || !Number.isInteger(categoryId) || categoryId < 1) {
+    throw new ApiError(400, 'categoryId must be a positive integer');
+  }
 
   return {
-    data: {
-      title: title.trim(),
-      content: content.trim(),
-      author: author.trim(),
-      category: category.trim(),
-    },
+    title: title.trim(),
+    content: content.trim(),
+    author: author.trim(),
+    categoryId,
   };
 }
