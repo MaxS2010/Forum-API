@@ -71,20 +71,6 @@ DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
 
 You can customize how your environment variables are loaded by changing or removing the `import 'dotenv/config'` line.
 
-## User authentication
-
-Set `AUTH_JWT_SECRET` in `.env` to a random secret of at least 32 bytes. Never commit `.env` or use the example placeholder in production. Passwords are stored as scrypt hashes; login issues a 15-minute JWT in an `HttpOnly`, `SameSite=Lax` cookie (also `Secure` in production).
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/auth/register` | Register with `{ "email": "...", "password": "..." }` |
-| `POST` | `/auth/login` | Sign in and receive the `accessToken` cookie |
-| `POST` | `/auth/logout` | Clear the authentication cookie |
-| `GET` | `/me` | Get the authenticated user |
-| `GET` | `/me/posts` | Get posts owned by the authenticated user |
-
-Send cookies with requests to protected endpoints. The owner filter for `/me/posts` comes from the verified token, not request parameters.
-
 ## Quick reference
 
 ### Commands
