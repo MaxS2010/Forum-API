@@ -65,15 +65,18 @@ function parseCreatePost(body: unknown): CreatePostRequest {
   }
 
   const post = body as Record<string, unknown>;
-  const allowedFields = ['title', 'content', 'author', 'categoryId'];
+  const allowedFields = ['title', 'content', 'authorId', 'categoryId'];
   if (Object.keys(post).some((field) => !allowedFields.includes(field))) {
     throw new ApiError(422, 'Request contains invalid fields');
   }
 
-  const { title, content, author, categoryId } = post;
+  const { title, content, authorId, categoryId } = post;
   if (typeof title !== 'string' || !title.trim()) throw new ApiError(422, 'title must be a non-empty string');
   if (typeof content !== 'string' || !content.trim()) throw new ApiError(422, 'content must be a non-empty string');
-  if (typeof author !== 'string' || !author.trim()) throw new ApiError(422, 'author must be a non-empty string');
+  if (authorId === undefined) throw new ApiError(422, 'authorId is required');
+  if (typeof authorId !== 'number' || !Number.isInteger(authorId) || authorId < 1) {
+    throw new ApiError(400, 'authorId must be a positive integer');
+  }
 
   if (categoryId === undefined) throw new ApiError(422, 'categoryId is required');
   if (typeof categoryId !== 'number' || !Number.isInteger(categoryId) || categoryId < 1) {
@@ -83,7 +86,7 @@ function parseCreatePost(body: unknown): CreatePostRequest {
   return {
     title: title.trim(),
     content: content.trim(),
-    author: author.trim(),
+    authorId,
     categoryId,
   };
 }
