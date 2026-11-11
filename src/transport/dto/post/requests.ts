@@ -2,11 +2,12 @@ export interface CreatePostRequest {
 	title: string;
 	content: string;
 	author: string;
-	category: string;
+	categoryId: number;
 }
 
 export interface GetPostsQuery {
 	category?: string;
+	categoryId?: string;
 	take?: string;
 }
 

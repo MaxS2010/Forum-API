@@ -1,9 +1,16 @@
+import type { Category } from '../category/entity.js';
+
 export interface Post {
-	id: number;
-	title: string;
-	content: string;
-	author: string;
-	category: string;
+  id: number;
+  title: string;
+  content: string;
+  author: string;
+  category: Category;
 }
 
-export type CreatePostInput = Omit<Post, 'id'>;
+export interface CreatePostInput {
+  title: string;
+  content: string;
+  author: string;
+  categoryId: number;
+}
