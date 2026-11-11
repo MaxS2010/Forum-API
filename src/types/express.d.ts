@@ -1,4 +1,4 @@
-import type { AccessTokenPayload } from '../services/access-token.js';
+import type { AccessTokenPayload } from '../lib/jwt.js';
 
 declare global {
   namespace Express {
