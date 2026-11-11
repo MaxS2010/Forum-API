@@ -1,9 +1,15 @@
 import type { CreatePostInput, Post } from '../domain/post/entity.js';
 import type { Repository } from '../domain/post/repository.js';
+import type { db } from '../prisma/db.js';
 
-const posts: Post[] = [];
+type PrismaDb = typeof db;
 
-export function createPostRepository(): Repository {
+export async function createPostRepository(database: PrismaDb): Promise<Repository> {
+  const posts: Post[] = await database.orm.public.Post
+    .select('id', 'title', 'content', 'author', 'category')
+    .orderBy((post) => post.id.asc())
+    .all();
+
   return {
     getAll(category?: string, take?: number): Post[] {
       const filteredPosts = category ? posts.filter((post) => post.category === category) : posts;
@@ -14,10 +20,10 @@ export function createPostRepository(): Repository {
       return posts.find((post) => post.id === id);
     },
 
-    addPost(post: CreatePostInput): Promise<Post> {
-      const newPost: Post = { id: posts.length ? Math.max(...posts.map(({ id }) => id)) + 1 : 1, ...post };
+    async addPost(post: CreatePostInput): Promise<Post> {
+      const newPost = await database.orm.public.Post.create(post);
       posts.push(newPost);
-      return Promise.resolve(newPost);
+      return newPost;
     }
   };
 }
