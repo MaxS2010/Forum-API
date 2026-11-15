@@ -71,6 +71,21 @@ DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
 
 You can customize how your environment variables are loaded by changing or removing the `import 'dotenv/config'` line.
 
+## User authentication
+
+Set `AUTH_JWT_SECRET` and `AUTH_REFRESH_JWT_SECRET` in `.env` to different random secrets of at least 32 bytes each. Never commit `.env` or use the example placeholders in production. Passwords are stored as scrypt hashes. Login issues a 15-minute access JWT and a 7-day refresh JWT in `HttpOnly`, `SameSite=Lax` cookies (also `Secure` in production). The refresh cookie is scoped to `/auth`.
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/auth/register` | Register with `{ "email": "...", "password": "..." }` |
+| `POST` | `/auth/login` | Sign in and receive the `accessToken` cookie |
+| `POST` | `/auth/refresh` | Refresh both tokens using the `refreshToken` cookie |
+| `POST` | `/auth/logout` | Clear the authentication cookie |
+| `GET` | `/me` | Get the authenticated user |
+| `GET` | `/me/posts` | Get posts owned by the authenticated user |
+
+Send cookies with requests to protected endpoints. The owner filter for `/me/posts` comes from the verified token, not request parameters.
+
 ## Quick reference
 
 ### Commands
