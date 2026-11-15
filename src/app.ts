@@ -1,9 +1,7 @@
 import express from 'express';
-import cookieParser from 'cookie-parser';
 import { db } from './prisma/db.js';
 import { createCategoryRepository } from './repositories/category.js';
 import { createPostRepository } from './repositories/post.js';
-import { createUserRepository } from './repositories/user.js';
 import { createCategoryService } from './services/category.js';
 import { createPostService } from './services/post.js';
 import { createAuthService } from './services/auth/auth.js';
@@ -29,7 +27,6 @@ const PORT: number = 8000;
 const app = express();
 const postRepository = createPostRepository(db);
 const categoryRepository = createCategoryRepository(db);
-const userRepository = createUserRepository(db);
 const postService = createPostService(postRepository);
 const categoryService = createCategoryService(categoryRepository);
 const authService = createAuthService(
@@ -46,7 +43,6 @@ const requireAuth = createRequireAuth(verifyAccessToken);
 const authRouter = createAuthRouter(authHandlers, requireAuth);
 
 app.use(express.json());
-app.use(cookieParser());
 app.use(postRouter);
 app.use(categoryRouter);
 app.use(authRouter);

@@ -4,7 +4,7 @@ import type { PostService } from './post.types.js';
 
 export function createPostService(postRepository: Repository): PostService {
   return {
-    getPosts(filters: { category?: string; categoryId?: number; authorId?: number; take?: number }): Promise<Post[]> {
+    getPosts(filters: { category?: string; categoryId?: number; take?: number }): Promise<Post[]> {
       return postRepository.getAll(filters);
     },
     getPostById(id: number): Promise<Post | undefined> {
